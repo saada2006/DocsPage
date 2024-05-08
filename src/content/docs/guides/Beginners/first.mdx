@@ -11,18 +11,26 @@ sidebar:
 
 ### Textures and Renderpasses
 
-Before we get into shaders, we must understand what a texture is. In it's simplest definition, a texture is a 2D array of colors. You've probably already know a common use of textures: apply an image to a surface of an object. For instance, if we wanted to render an image of a room, we would need to know what the colors of objects in the room are like. We might have a woden cabinet in our room, and we would need to know what surface of that cabinet looks like. For that, we would have a texture artist take a picture of a wooden surface, and then apply this image to our cabinet's surface. Then, during rendering, we can simply read back from this image to figure out the cabinet's color on each point of the surface. 
+Before we get into shaders, we must understand what a texture is. In it's simplest definition, a texture is a 2D array of colors. As you probably already know, textures are used to apply an image to the surface of objects in 3D scenes. However, we can use textures for any arbitrary purpose, and most rendering pipelines use textures to store information about an image as it is being rendered. For each pixel in our rendered image, we might store information such as how bright that pixel is or material properties. 
 
-(insert a few sample images)
+This is pretty useful because most rendering pipelines are divided into mini-programs called "renderpasses" ("passes" for short) that pass information between each other via textures. An advantage of this approach is that passes can take advantage of information computed in previous passes without having to recompute information from the ground up.
 
-However, we can use textures for an arbitrary purpose. Textures are commonly used to store information about an image as it is being rendered. For instance, we might have a texture containing how brightly lit each pixel within our rendered image is, or which direction each surface in the image is pointing. 
+As an image is being rendered, one pass might spit out, say, information about each pixel's geometric, lighting, and material information in a scene. A second pass might take this information from the first pass and compute the color of each pixel. A third pass might take information from both the first and second passes and apply screen space reflections. 
+(insert an image of this)
 
-(insert a few sample images)
+### Structure of a Pack 
 
-This might seem unintuitive (after all, why not render the image all at once? you wouldn't need to store data in intermediate textures), but is very crucial to rendering. Most rendering pipelines are decomposed into mini-programs called "renderpasses" (or just "passes" for short), which take information from the previous pass and compute some new information that is passed to the next passs. By passing textures between passes, we can avoid recomputing each pixel. 
+```
+<your modpack folder
+└── shaderpacks
+    └── <your pack name>
+        └── shaders
+            └── <GLSL files>
+            └── <config files>
 
-Imagine that we want to blur an image. Blurring works by "averaging" values for each pixel with neighboring pixels. However, suppose the color of each pixel (before the blur) is given by some function `f`, and suppose `f` is very expensive to calculate. One way we can calculate the blur is for each pixel, we can calculate the value of `f` for that pixel and neighboring pixel and take the average of that. However, this is very slow and not practical because we recalculate values for `f` a lot. To speed up this process, we can have a pass that writes the value of `f` to a texture, and instead of recalculating `f`, we read precomputed values for `f` from this texture. 
+```
+
 
 ### The Final Pass
 
-Our first shader will be situated at the end of the Minecraft shading pipeline, in a pass named `final`, which takes in the raw, rendered image of a scene and modifies it however we want. 
+Our first shader will be situated at the end of the Minecraft shading pipeline in a pass named `final`, which takes in the raw, rendered image of a scene and modifies it however we want before it gets displayed to the screen. In this example, we will convert Minecraft to grayscale. First, go to your `shaderpacks` folder and create a folder with the name of your choice (I'll be calling in TutorialShader). Then, in that folder, create another folder called `shaders`. In `shaders`, create a two files named `final.vsh` and `final.fsh`. 
